@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Tracker</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #d9e2ec;
+        --accent: #2563eb;
+        --accent-soft: #dbeafe;
+        --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page-header {
+        padding: 2rem 1.5rem 1rem;
+        background: linear-gradient(135deg, #0f172a, #1d4ed8);
+        color: #ffffff;
+      }
+
+      .page-header h1 {
+        margin: 0 0 0.35rem;
+        font-size: 2rem;
+      }
+
+      .page-header p {
+        margin: 0;
+        color: #dbeafe;
+      }
+
+      main {
+        padding: 1.5rem;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: 1rem;
+        align-items: start;
+      }
+
+      .column {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 1rem;
+      }
+
+      .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.9rem;
+      }
+
+      .column-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .column-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.8rem;
+        height: 1.8rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 0 0.45rem;
+      }
+
+      .task-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.9rem;
+        background: #f8fafc;
+        margin-bottom: 0.8rem;
+      }
+
+      .task-card:last-child {
+        margin-bottom: 0;
+      }
+
+      .task-title {
+        margin: 0 0 0.4rem;
+        font-size: 0.98rem;
+        font-weight: 700;
+      }
+
+      .task-description {
+        margin: 0 0 0.7rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .task-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.85rem;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #334155;
+      }
+
+      .priority-high {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .priority-medium {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .priority-low {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .task-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .edit-button {
+        border: none;
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        background: var(--accent);
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      .edit-button:hover {
+        background: #1d4ed8;
+      }
+
+      @media (max-width: 900px) {
+        .board {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>Task Tracker</h1>
+      <p>Keep work moving across planning, execution, and completion.</p>
+    </header>
+
+    <main>
+      <section class="board" aria-label="Kanban board">
+        <section class="column" data-status="ToDo">
+          <div class="column-header">
+            <h2 class="column-title">To Do</h2>
+            <span class="column-count">0</span>
+          </div>
+          <div class="task-list"></div>
+        </section>
+
+        <section class="column" data-status="InProgress">
+          <div class="column-header">
+            <h2 class="column-title">In Progress</h2>
+            <span class="column-count">0</span>
+          </div>
+          <div class="task-list"></div>
+        </section>
+
+        <section class="column" data-status="Done">
+          <div class="column-header">
+            <h2 class="column-title">Done</h2>
+            <span class="column-count">0</span>
+          </div>
+          <div class="task-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const API_BASE = 'http://localhost:8000';
+      const STATUS_ORDER = ['ToDo', 'InProgress', 'Done'];
+      const STATUS_LABELS = {
+        ToDo: 'To Do',
+        InProgress: 'In Progress',
+        Done: 'Done'
+      };
+      const PRIORITY_ORDER = {
+        High: 0,
+        Medium: 1,
+        Low: 2
+      };
+
+      let tasks = [];
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function compareTasks(left, right) {
+        const leftPriority = PRIORITY_ORDER[left.priority] ?? Number.MAX_SAFE_INTEGER;
+        const rightPriority = PRIORITY_ORDER[right.priority] ?? Number.MAX_SAFE_INTEGER;
+
+        if (leftPriority !== rightPriority) {
+          return leftPriority - rightPriority;
+        }
+
+        const leftId = Number(left.id);
+        const rightId = Number(right.id);
+
+        if (Number.isFinite(leftId) && Number.isFinite(rightId)) {
+          return leftId - rightId;
+        }
+
+        return String(left.id).localeCompare(String(right.id));
+      }
+
+      function renderBoard(taskList) {
+        const columns = document.querySelectorAll('.column');
+
+        columns.forEach((column) => {
+          const status = column.dataset.status;
+          const matchingTasks = taskList
+            .filter((task) => task.status === status)
+            .sort(compareTasks);
+          const count = column.querySelector('.column-count');
+          const body = column.querySelector('.task-list');
+
+          if (count) {
+            count.textContent = String(matchingTasks.length);
+          }
+
+          if (!body) {
+            return;
+          }
+
+          if (matchingTasks.length === 0) {
+            body.innerHTML = '<p class="task-description">No tasks yet.</p>';
+            return;
+          }
+
+          body.innerHTML = matchingTasks
+            .map((task) => {
+              const title = escapeHtml(task.title || 'Untitled task');
+              const description = escapeHtml(task.description || '');
+              const priority = escapeHtml(task.priority || 'Medium');
+              const assignee = escapeHtml(task.assignee || 'Unassigned');
+              const priorityClass = `priority-${priority.toLowerCase()}`;
+
+              return `
+                <article class="task-card" data-task-id="${escapeHtml(task.id)}">
+                  <h3 class="task-title">${title}</h3>
+                  ${description ? `<p class="task-description">${description}</p>` : ''}
+                  <div class="task-meta">
+                    <span class="pill ${priorityClass}">${priority} priority</span>
+                    <span class="pill">Assignee: ${assignee}</span>
+                  </div>
+                  <div class="task-actions">
+                    <button class="edit-button" type="button">Edit</button>
+                  </div>
+                </article>
+              `;
+            })
+            .join('');
+        });
+      }
+
+      async function fetchTasks() {
+        try {
+          const response = await fetch(`${API_BASE}/tasks`);
+
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          const data = await response.json();
+          tasks = Array.isArray(data) ? data : [];
+          renderBoard(tasks);
+        } catch (error) {
+          console.error('Unable to load tasks:', error);
+          renderBoard([]);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        fetchTasks();
+      });
+    </script>
+  </body>
+</html>
+
