@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import storage
 from app.business_rules import validate_status_transition
-from app.models import TaskCreate, TaskResponse, TaskUpdate
+from app.models import TaskCreate, TaskPriority, TaskResponse, TaskStatus, TaskUpdate
 from app.routers import health
 
 app = FastAPI(
@@ -38,8 +38,12 @@ def create_task(payload: TaskCreate) -> TaskResponse:
 
 
 @app.get("/tasks", response_model=list[TaskResponse], tags=["tasks"])
-def list_tasks() -> list[TaskResponse]:
-    return storage.get_all_tasks()
+def list_tasks(
+    status: TaskStatus | None = None,
+    priority: TaskPriority | None = None,
+    overdue: bool | None = None,
+) -> list[TaskResponse]:
+    return storage.get_all_tasks(status=status, priority=priority, overdue=overdue)
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["tasks"])
