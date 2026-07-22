@@ -102,6 +102,36 @@
         margin-bottom: 0;
       }
 
+      .task-card.is-dragging {
+        opacity: 0.6;
+        transform: scale(0.98);
+      }
+
+      .column.drag-over {
+        outline: 2px dashed var(--accent);
+        background: #f8fbff;
+      }
+
+      .board-status {
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        display: none;
+      }
+
+      .board-status.loading {
+        display: block;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+
+      .board-status.error {
+        display: block;
+        background: #fef2f2;
+        color: #b91c1c;
+      }
+
       .task-title {
         margin: 0 0 0.4rem;
         font-size: 0.98rem;
@@ -179,6 +209,7 @@
     </header>
 
     <main>
+      <div class="board-status" id="board-status" role="status" aria-live="polite"></div>
       <section class="board" aria-label="Kanban board">
         <section class="column" data-status="ToDo">
           <div class="column-header">
@@ -221,6 +252,8 @@
       };
 
       let tasks = [];
+      let draggedTaskId = null;
+      let boardState = 'loading';
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -249,6 +282,19 @@
         return String(left.id).localeCompare(String(right.id));
       }
 
+      function setBoardStatus(state, message = '') {
+        boardState = state;
+        const statusElement = document.getElementById('board-status');
+
+        if (!statusElement) {
+          return;
+        }
+
+        statusElement.textContent = message;
+        statusElement.className = `board-status ${state}`;
+        statusElement.hidden = !message;
+      }
+
       function renderBoard(taskList) {
         const columns = document.querySelectorAll('.column');
 
@@ -268,8 +314,18 @@
             return;
           }
 
+          if (boardState === 'loading') {
+            body.innerHTML = '<p class="task-description">Loading tasks…</p>';
+            return;
+          }
+
+          if (boardState === 'error' && matchingTasks.length === 0) {
+            body.innerHTML = '<p class="task-description">Unable to load tasks.</p>';
+            return;
+          }
+
           if (matchingTasks.length === 0) {
-            body.innerHTML = '<p class="task-description">No tasks yet.</p>';
+            body.innerHTML = '<p class="task-description">No tasks yet. Create one from the API to see it here.</p>';
             return;
           }
 
@@ -282,7 +338,7 @@
               const priorityClass = `priority-${priority.toLowerCase()}`;
 
               return `
-                <article class="task-card" data-task-id="${escapeHtml(task.id)}">
+                <article class="task-card" data-task-id="${escapeHtml(task.id)}" draggable="true">
                   <h3 class="task-title">${title}</h3>
                   ${description ? `<p class="task-description">${description}</p>` : ''}
                   <div class="task-meta">
@@ -297,9 +353,147 @@
             })
             .join('');
         });
+
+      }
+
+      function attachBoardListeners() {
+        const board = document.querySelector('.board');
+        if (!board) {
+          return;
+        }
+
+        board.addEventListener('dragstart', handleDragStart);
+        board.addEventListener('dragend', handleDragEnd);
+        board.addEventListener('dragover', handleDragOver);
+        board.addEventListener('dragleave', handleDragLeave);
+        board.addEventListener('drop', handleDrop);
+      }
+
+      function handleDragStart(event) {
+        const card = event.target.closest('.task-card');
+        if (!card) {
+          return;
+        }
+
+        draggedTaskId = card.dataset.taskId;
+        card.classList.add('is-dragging');
+        event.dataTransfer?.setData('text/plain', draggedTaskId || '');
+        event.dataTransfer.effectAllowed = 'move';
+      }
+
+      function handleDragEnd(event) {
+        const card = event.target.closest('.task-card');
+        if (!card) {
+          return;
+        }
+
+        card.classList.remove('is-dragging');
+        document.querySelectorAll('.column').forEach((column) => column.classList.remove('drag-over'));
+        draggedTaskId = null;
+      }
+
+      function handleDragOver(event) {
+        const column = event.target.closest('.column');
+        if (!draggedTaskId || !column) {
+          return;
+        }
+
+        event.preventDefault();
+        column.classList.add('drag-over');
+      }
+
+      function handleDragLeave(event) {
+        const column = event.target.closest('.column');
+        if (!column) {
+          return;
+        }
+
+        if (column.contains(event.relatedTarget)) {
+          return;
+        }
+
+        column.classList.remove('drag-over');
+      }
+
+      async function handleDrop(event) {
+        event.preventDefault();
+        const column = event.target.closest('.column');
+        if (!column) {
+          draggedTaskId = null;
+          return;
+        }
+
+        const targetStatus = column.dataset.status;
+        const taskId = draggedTaskId;
+        const task = tasks.find((item) => String(item.id) === String(taskId));
+
+        column.classList.remove('drag-over');
+
+        if (!task || !taskId || task.status === targetStatus) {
+          draggedTaskId = null;
+          return;
+        }
+
+        const previousTasks = tasks.map((item) => ({ ...item }));
+        tasks = tasks.map((item) => (
+          String(item.id) === String(taskId) ? { ...item, status: targetStatus } : item
+        ));
+        renderBoard(tasks);
+
+        try {
+          const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: targetStatus })
+          });
+
+          if (!response.ok) {
+            const errorMessage = await parseErrorMessage(response);
+            tasks = previousTasks;
+            setBoardStatus('error', errorMessage);
+            renderBoard(tasks);
+            return;
+          }
+
+          const updatedTask = await response.json();
+          tasks = tasks.map((item) => (
+            String(item.id) === String(updatedTask.id) ? updatedTask : item
+          ));
+          setBoardStatus('ready', '');
+          renderBoard(tasks);
+        } catch (error) {
+          console.error('Unable to update task status:', error);
+          tasks = previousTasks;
+          setBoardStatus('error', 'Unable to update task. Please check your connection and try again.');
+          renderBoard(tasks);
+        } finally {
+          draggedTaskId = null;
+        }
+      }
+
+      async function parseErrorMessage(response) {
+        try {
+          const payload = await response.json();
+
+          if (typeof payload?.detail === 'string') {
+            return payload.detail;
+          }
+
+          if (Array.isArray(payload?.detail) && payload.detail.length > 0) {
+            return payload.detail[0]?.msg || 'Unable to update task.';
+          }
+        } catch (error) {
+          console.error('Unable to parse error payload:', error);
+        }
+
+        return 'Unable to update task.';
       }
 
       async function fetchTasks() {
+        setBoardStatus('loading', 'Loading tasks…');
+
         try {
           const response = await fetch(`${API_BASE}/tasks`);
 
@@ -309,14 +503,18 @@
 
           const data = await response.json();
           tasks = Array.isArray(data) ? data : [];
+          setBoardStatus('ready', '');
           renderBoard(tasks);
         } catch (error) {
           console.error('Unable to load tasks:', error);
-          renderBoard([]);
+          tasks = [];
+          setBoardStatus('error', 'Unable to load tasks right now.');
+          renderBoard(tasks);
         }
       }
 
       document.addEventListener('DOMContentLoaded', () => {
+        attachBoardListeners();
         fetchTasks();
       });
     </script>
