@@ -189,6 +189,25 @@
         border: 1px solid;
       }
 
+      .board-filters {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+      }
+
+      .filter-checkbox {
+        width: 1rem;
+        height: 1rem;
+        accent-color: var(--accent);
+      }
+
+      .filter-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
       .board-status.loading {
         display: block;
         background: #eff6ff;
@@ -249,6 +268,16 @@
       .priority-low {
         background: #dcfce7;
         color: #166534;
+      }
+
+      .due-date-pill {
+        background: #e2e8f0;
+        color: #334155;
+      }
+
+      .due-date-pill.overdue {
+        background: #fee2e2;
+        color: #b91c1c;
       }
 
       .task-actions {
@@ -585,6 +614,10 @@
               <label class="form-label" for="form-assignee">Assignee</label>
               <input type="text" id="form-assignee" class="form-input" placeholder="Enter assignee name (optional)" />
             </div>
+            <div class="form-group">
+              <label class="form-label" for="form-due-date">Due Date</label>
+              <input type="date" id="form-due-date" class="form-input" />
+            </div>
           </form>
         </div>
         <div class="modal-footer">
@@ -595,6 +628,10 @@
     </div>
 
     <main>
+      <div class="board-filters">
+        <input type="checkbox" id="overdue-filter" class="filter-checkbox" />
+        <label for="overdue-filter" class="filter-label">Overdue</label>
+      </div>
       <div class="board-status" id="board-status" role="status" aria-live="polite"></div>
       <section class="board" aria-label="Kanban board">
         <section class="column" data-status="ToDo">
@@ -642,6 +679,7 @@
       let boardState = 'loading';
       let isModalOpen = false;
       let currentTask = null;
+      let showOverdueOnly = false;
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -650,6 +688,26 @@
           .replaceAll('>', '&gt;')
           .replaceAll('"', '&quot;')
           .replaceAll("'", '&#39;');
+      }
+
+      function normalizeDueDate(value) {
+        if (!value) {
+          return '';
+        }
+
+        if (typeof value === 'string') {
+          return value.slice(0, 10);
+        }
+
+        return '';
+      }
+
+      function getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       }
 
       function compareTasks(left, right) {
@@ -685,6 +743,7 @@
 
       function renderBoard(taskList) {
         const columns = document.querySelectorAll('.column');
+        const today = getTodayDateString();
 
         columns.forEach((column) => {
           const status = column.dataset.status;
@@ -724,6 +783,10 @@
               const priority = escapeHtml(task.priority || 'Medium');
               const assignee = escapeHtml(task.assignee || 'Unassigned');
               const priorityClass = `priority-${priority.toLowerCase()}`;
+              const dueDate = normalizeDueDate(task.due_date);
+              const dueDateText = dueDate ? `Due: ${dueDate}` : 'No due date';
+              const isOverdue = Boolean(dueDate) && dueDate < today && task.status !== 'Done';
+              const dueDateClasses = `pill due-date-pill${isOverdue ? ' overdue' : ''}`;
 
               return `
                 <article class="task-card" data-task-id="${escapeHtml(task.id)}" draggable="true">
@@ -732,6 +795,7 @@
                   <div class="task-meta">
                     <span class="pill ${priorityClass}">${priority} priority</span>
                     <span class="pill">Assignee: ${assignee}</span>
+                    <span class="${dueDateClasses}">${escapeHtml(dueDateText)}</span>
                   </div>
                   <div class="task-actions">
                     <button class="edit-button" type="button" data-task-id="${escapeHtml(task.id)}">Edit</button>
@@ -933,6 +997,7 @@
         document.getElementById('form-status').value = 'ToDo';
         document.getElementById('form-priority').value = 'Medium';
         document.getElementById('form-assignee').value = '';
+        document.getElementById('form-due-date').value = '';
       }
 
       function populateFormFields(task) {
@@ -942,6 +1007,7 @@
         document.getElementById('form-status').value = task.status || 'ToDo';
         document.getElementById('form-priority').value = task.priority || 'Medium';
         document.getElementById('form-assignee').value = task.assignee || '';
+        document.getElementById('form-due-date').value = normalizeDueDate(task.due_date);
       }
 
       function clearFormErrors() {
@@ -978,6 +1044,8 @@
         const priority = document.getElementById('form-priority').value;
         const assigneeInput = document.getElementById('form-assignee').value.trim();
         const assignee = assigneeInput || null;
+        const dueDateInput = document.getElementById('form-due-date').value;
+        const dueDate = dueDateInput || null;
 
         if (currentTask) {
           const payload = {};
@@ -1002,6 +1070,10 @@
             payload.assignee = assignee;
           }
 
+          if (dueDateInput !== normalizeDueDate(currentTask.due_date)) {
+            payload.due_date = dueDate;
+          }
+
           if (Object.keys(payload).length === 0) {
             closeModal();
             return;
@@ -1016,7 +1088,8 @@
           description: description || '',
           status,
           priority,
-          assignee
+          assignee,
+          due_date: dueDate
         };
         await submitNewTask(payload);
       }
@@ -1090,11 +1163,24 @@
         });
       }
 
+      function attachFilterListeners() {
+        const overdueFilter = document.getElementById('overdue-filter');
+        if (!overdueFilter) {
+          return;
+        }
+
+        overdueFilter.addEventListener('change', () => {
+          showOverdueOnly = overdueFilter.checked;
+          fetchTasks();
+        });
+      }
+
       async function fetchTasks() {
         setBoardStatus('loading', 'Loading tasks…');
 
         try {
-          const response = await fetch(`${API_BASE}/tasks`);
+          const endpoint = showOverdueOnly ? `${API_BASE}/tasks?overdue=true` : `${API_BASE}/tasks`;
+          const response = await fetch(endpoint);
 
           if (!response.ok) {
             throw new Error(`Request failed with status ${response.status}`);
@@ -1115,6 +1201,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         attachBoardListeners();
         attachModalListeners();
+        attachFilterListeners();
         fetchTasks();
       });
     </script>
