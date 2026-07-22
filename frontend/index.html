@@ -192,8 +192,32 @@
       .board-filters {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 0.6rem;
         margin-bottom: 1rem;
+      }
+
+      .filter-input,
+      .filter-select {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.9rem;
+        font-family: inherit;
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .filter-input {
+        width: 220px;
+        max-width: 100%;
+      }
+
+      .filter-input:focus,
+      .filter-select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
 
       .filter-checkbox {
@@ -629,6 +653,25 @@
 
     <main>
       <div class="board-filters">
+        <input
+          type="search"
+          id="search-filter"
+          class="filter-input"
+          placeholder="Search title or description"
+          aria-label="Search tasks"
+        />
+        <select id="status-filter" class="filter-select" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="ToDo">ToDo</option>
+          <option value="InProgress">InProgress</option>
+          <option value="Done">Done</option>
+        </select>
+        <select id="priority-filter" class="filter-select" aria-label="Filter by priority">
+          <option value="">All priorities</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
         <input type="checkbox" id="overdue-filter" class="filter-checkbox" />
         <label for="overdue-filter" class="filter-label">Overdue</label>
       </div>
@@ -680,6 +723,9 @@
       let isModalOpen = false;
       let currentTask = null;
       let showOverdueOnly = false;
+      let activeSearch = '';
+      let activeStatus = '';
+      let activePriority = '';
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -1165,12 +1211,31 @@
 
       function attachFilterListeners() {
         const overdueFilter = document.getElementById('overdue-filter');
-        if (!overdueFilter) {
+        const searchFilter = document.getElementById('search-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const priorityFilter = document.getElementById('priority-filter');
+
+        if (!overdueFilter || !searchFilter || !statusFilter || !priorityFilter) {
           return;
         }
 
         overdueFilter.addEventListener('change', () => {
           showOverdueOnly = overdueFilter.checked;
+          fetchTasks();
+        });
+
+        searchFilter.addEventListener('input', () => {
+          activeSearch = searchFilter.value.trim();
+          fetchTasks();
+        });
+
+        statusFilter.addEventListener('change', () => {
+          activeStatus = statusFilter.value;
+          fetchTasks();
+        });
+
+        priorityFilter.addEventListener('change', () => {
+          activePriority = priorityFilter.value;
           fetchTasks();
         });
       }
@@ -1179,7 +1244,26 @@
         setBoardStatus('loading', 'Loading tasks…');
 
         try {
-          const endpoint = showOverdueOnly ? `${API_BASE}/tasks?overdue=true` : `${API_BASE}/tasks`;
+          const query = new URLSearchParams();
+
+          if (activeSearch) {
+            query.set('search', activeSearch);
+          }
+
+          if (activeStatus) {
+            query.set('status', activeStatus);
+          }
+
+          if (activePriority) {
+            query.set('priority', activePriority);
+          }
+
+          if (showOverdueOnly) {
+            query.set('overdue', 'true');
+          }
+
+          const queryString = query.toString();
+          const endpoint = queryString ? `${API_BASE}/tasks?${queryString}` : `${API_BASE}/tasks`;
           const response = await fetch(endpoint);
 
           if (!response.ok) {
