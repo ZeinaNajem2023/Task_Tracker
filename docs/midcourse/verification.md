@@ -6,15 +6,27 @@ Before making feature changes, I checked the existing application.
 
 Results:
 
-- `pytest` completed successfully but collected `0` tests because the project did not yet contain pytest-style test files.
+- `pytest` initially collected `0` tests because the project did not yet contain pytest-style baseline tests.
 - The `/health` endpoint returned HTTP 200.
 - The existing Kanban frontend loaded successfully.
 
-This established the baseline before implementing the two features.
+For the revision, I added automated baseline pytest coverage for the existing application behavior, including:
+
+- create and get task
+- list tasks
+- update task
+- delete task
+- missing-task 404 responses
+- valid status transitions
+- invalid status transitions
+
+Baseline test result:
+
+`10 passed`
 
 ## Backend Test Results
 
-After implementing Due Dates + Overdue Filtering and Search + Combined Filters, I ran the full pytest suite.
+After adding the baseline tests and keeping the Feature 1 and Feature 2 tests, I ran the full pytest suite.
 
 Command:
 
@@ -22,17 +34,9 @@ Command:
 
 Result:
 
-`9 passed`
+`16 passed`
 
-The tests cover:
-
-- valid and invalid due dates
-- updating and clearing due dates
-- overdue filtering
-- title and description search
-- case-insensitive search
-- combined filters
-- empty search results
+The full suite now covers both the original CRUD/status-transition behavior and the two new features.
 
 ## Manual Browser Checks
 
@@ -54,11 +58,11 @@ Checks included:
 
 ## Behavior Contract
 
-Before final cleanup, I verified the expected behavior of both features.
+The behavior contract includes:
 
-The behavior contract included:
-
-- Existing task creation and update behavior still works.
+- Existing create, get, list, update, and delete behavior works.
+- Valid status transitions are accepted.
+- Invalid status transitions are rejected.
 - Due dates can be created, updated, and cleared.
 - Tasks due today are not overdue.
 - `Done` tasks are never overdue.
@@ -68,9 +72,9 @@ The behavior contract included:
 - Empty results return HTTP 200 with an empty list.
 - All Kanban columns remain visible when filters return no tasks.
 
-Full test result:
+Final full test result:
 
-`9 passed`
+`16 passed`
 
 ## Break Test 1 — Overdue Detection
 
@@ -132,6 +136,6 @@ The tests correctly detected that case-insensitive search behavior had been brok
 
 After the Break Test, the correct `.lower()` comparisons were restored.
 
-The full test suite was rerun and returned:
+The final full test suite was rerun and returned:
 
-`9 passed`
+`16 passed`
