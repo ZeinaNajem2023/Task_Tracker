@@ -29,4 +29,4 @@ python -m pytest -q
 
 Expected result:
 
-9 passed
+17 passed
