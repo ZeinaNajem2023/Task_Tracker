@@ -155,3 +155,8 @@ def test_update_rejects_explicit_null_title_and_status(client):
 
     assert null_status_response.status_code == 422
     assert any(error["loc"][-1] == "status" for error in null_status_response.json()["detail"])
+
+    unchanged = client.get(f"/tasks/{task['id']}").json()
+
+    assert unchanged["title"] == "Nullable update target"
+    assert unchanged["status"] == "ToDo"
