@@ -133,3 +133,25 @@ def test_invalid_status_transitions_return_422(client):
 
     assert done_to_todo.status_code == 422
     assert "Invalid status transition" in done_to_todo.json()["detail"]
+
+
+def test_update_rejects_explicit_null_title_and_status(client):
+    task = client.post(
+        "/tasks",
+        json={"title": "Nullable update target"},
+    ).json()
+
+    null_title_response = client.patch(
+        f"/tasks/{task['id']}",
+        json={"title": None},
+    )
+    null_status_response = client.patch(
+        f"/tasks/{task['id']}",
+        json={"status": None},
+    )
+
+    assert null_title_response.status_code == 422
+    assert any(error["loc"][-1] == "title" for error in null_title_response.json()["detail"])
+
+    assert null_status_response.status_code == 422
+    assert any(error["loc"][-1] == "status" for error in null_status_response.json()["detail"])

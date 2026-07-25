@@ -19,10 +19,11 @@ For the revision, I added automated baseline pytest coverage for the existing ap
 - missing-task 404 responses
 - valid status transitions
 - invalid status transitions
+- explicit null rejections for update title and status fields
 
 Baseline test result:
 
-`10 passed`
+`8 passed`
 
 ## Backend Test Results
 
@@ -34,7 +35,7 @@ Command:
 
 Result:
 
-`16 passed`
+`17 passed`
 
 The full suite now covers both the original CRUD/status-transition behavior and the two new features.
 
@@ -63,6 +64,7 @@ The behavior contract includes:
 - Existing create, get, list, update, and delete behavior works.
 - Valid status transitions are accepted.
 - Invalid status transitions are rejected.
+- Explicit null values for task update title and status are rejected with HTTP 422.
 - Due dates can be created, updated, and cleared.
 - Tasks due today are not overdue.
 - `Done` tasks are never overdue.
@@ -74,7 +76,7 @@ The behavior contract includes:
 
 Final full test result:
 
-`16 passed`
+`17 passed`
 
 ## Break Test 1 — Overdue Detection
 
@@ -138,4 +140,4 @@ After the Break Test, the correct `.lower()` comparisons were restored.
 
 The final full test suite was rerun and returned:
 
-`16 passed`
+`17 passed`
