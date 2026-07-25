@@ -49,8 +49,7 @@ def get_all_tasks(
             tasks = [
                 task
                 for task in tasks
-                if normalized_search in task.title.lower()
-                or normalized_search in task.description.lower()
+                if normalized_search in task.title.lower() or normalized_search in task.description.lower()
             ]
     return tasks
 
