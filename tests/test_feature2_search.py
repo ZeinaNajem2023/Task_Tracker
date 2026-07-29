@@ -29,7 +29,7 @@ def test_search_by_title(client: TestClient) -> None:
 
     response = client.get("/tasks?search=road")
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     result_ids = {task["id"] for task in response.json()}
     assert result_ids == {matching["id"]}
 
