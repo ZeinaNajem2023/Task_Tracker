@@ -15,20 +15,21 @@ router = APIRouter(tags=["Health"])
 
 @router.get("/health")
 def get_health() -> dict:
-    """
-    Provide a basic health check endpoint for the API.
+    """Return service health status and current UTC timestamp.
+
+    Args:
+        None.
 
     Returns:
-        dict: A dictionary with:
-            - "status": Always set to "ok" to indicate the API is running.
-            - "timestamp": The current UTC time as an ISO 8601 string,
-              providing the precise moment of the health check.
+        dict: Health payload containing:
+            - status: "ok"
+            - timestamp: UTC ISO 8601 timestamp
 
-    Example response:
-        {
-            "status": "ok",
-            "timestamp": "2024-06-03T12:34:56.789123+00:00"
-        }
+    Raises:
+        None.
+
+    Examples:
+        GET /health
     """
     return {
         "status": "ok",

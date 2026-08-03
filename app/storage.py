@@ -8,6 +8,17 @@ _tasks: dict[str, TaskResponse] = {}
 
 
 def add_task(payload: TaskCreate) -> TaskResponse:
+    """Create and store a new task in the in-memory dictionary.
+
+    Args:
+        payload: Validated task creation payload.
+
+    Returns:
+        TaskResponse: Newly created task with generated ID and timestamps.
+
+    Raises:
+        None.
+    """
     now = datetime.now(timezone.utc)
     task_id = str(uuid4())
     task = TaskResponse(
@@ -25,6 +36,22 @@ def add_task(payload: TaskCreate) -> TaskResponse:
 
 
 def get_all_tasks(status=None, priority=None) -> list[TaskResponse]:
+    """Return all tasks, optionally filtered by status and/or priority.
+
+    Args:
+        status: Optional value used to match `task.status` exactly.
+        priority: Optional value used to match `task.priority` exactly.
+
+    Returns:
+        list[TaskResponse]: Tasks that satisfy the provided filters.
+
+    Raises:
+        None.
+
+    Notes:
+        [VERIFY] Parameter types are intentionally unannotated in code; callers
+        should pass values comparable to `task.status` and `task.priority`.
+    """
     tasks = list(_tasks.values())
     if status is not None:
         tasks = [task for task in tasks if task.status == status]
@@ -34,10 +61,34 @@ def get_all_tasks(status=None, priority=None) -> list[TaskResponse]:
 
 
 def get_task_by_id(task_id: str) -> Optional[TaskResponse]:
+    """Look up a task by ID.
+
+    Args:
+        task_id: Identifier to search for.
+
+    Returns:
+        Optional[TaskResponse]: Matching task, or None if not found.
+
+    Raises:
+        None.
+    """
     return _tasks.get(task_id)
 
 
 def update_task(task_id: str, payload: TaskUpdate) -> Optional[TaskResponse]:
+    """Apply partial updates to a task.
+
+    Args:
+        task_id: Identifier of the task to update.
+        payload: Partial fields for update.
+
+    Returns:
+        Optional[TaskResponse]: Updated task, unchanged task when payload has no
+        set fields, or None if task does not exist.
+
+    Raises:
+        None.
+    """
     task = _tasks.get(task_id)
     if task is None:
         return None
@@ -52,6 +103,17 @@ def update_task(task_id: str, payload: TaskUpdate) -> Optional[TaskResponse]:
 
 
 def delete_task(task_id: str) -> bool:
+    """Delete a task by ID.
+
+    Args:
+        task_id: Identifier of the task to delete.
+
+    Returns:
+        bool: True when the task existed and was deleted, False otherwise.
+
+    Raises:
+        None.
+    """
     if task_id not in _tasks:
         return False
     del _tasks[task_id]
