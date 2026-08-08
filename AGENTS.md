@@ -12,30 +12,29 @@
 
 ## 2. Run command (course standard)
 
-uvicorn app.main:app --reload --port 8000
+`uvicorn app.main:app --reload --port 8000`
 
 ## 3. Test command (course standard)
 
-pytest -v
+`pytest -v`
 
 ## 4. Architecture summary
 
 - Backend:
-  - app/main.py: FastAPI app setup, CORS middleware, and task endpoints (POST/GET list/GET by id/PATCH/DELETE).
-  - app/models.py: Pydantic models, enums, and field validation.
-  - app/storage.py: In-memory task store and filtering logic (status, priority, overdue, search).
-  - app/business_rules.py: status transition validation.
-  - app/routers/health.py: health endpoint router, included by app/main.py.
+  - app/main.py: FastAPI app setup, CORS middleware, and task CRUD endpoints (create, list, get by id, update, delete).
+  - app/models.py: Pydantic models and validation for task create/update/response payloads, including title rules and enum-backed status/priority values.
+  - app/storage.py: In-memory task store with helper support for exact-match status and priority filtering; the current GET /tasks endpoint does not expose those filters.
+  - app/business_rules.py: status transition validation for the allowed task state changes.
+  - app/routers/health.py: health endpoint router included by app/main.py.
 - Frontend:
-  - frontend/index.html: HTML/CSS/vanilla JS Kanban UI, modal form, drag/drop status updates, filters, and API calls.
+  - frontend/index.html: Vanilla JavaScript Kanban-style UI for viewing tasks by status, creating/editing tasks, and updating task status.
 - Tests:
-  - tests/test_baseline_crud.py: CRUD and status-transition coverage.
-  - tests/test_feature1_due_date.py: due date and overdue filter behavior.
-  - tests/test_feature2_search.py: search and combined filter behavior.
+  - tests/test_baseline_crud.py: API-level coverage for health, CRUD, and status-transition behavior.
+  - tests/verify_a.py: a standalone validation script for model-field and enum behavior; it is not collected by pytest by default.
 - Where task rules live:
   - Status transition rules: app/business_rules.py.
   - Input/data validation rules: app/models.py.
-  - Overdue and search filtering behavior: app/storage.py.
+  - In-memory filtering helpers: app/storage.py.
 
 ## 5. Business rules (implemented)
 
@@ -62,16 +61,20 @@ pytest -v
   - Inline form validation/error banner states.
 - CORS (backend):
   - Enabled via CORSMiddleware in app/main.py.
-  - Allowed origins:
-    - http://localhost:5500
-    - http://127.0.0.1:5500
-    - http://localhost:8000
-    - http://127.0.0.1:8000
-  - allow_credentials: true
-  - allow_methods: \*
-  - allow_headers: \*
+  - Allowed origins: `http://localhost:5500`, `http://127.0.0.1:5500`, `http://localhost:8000`, `http://127.0.0.1:8000`
+  - `allow_credentials`: true
+  - `allow_methods`: `*`
+  - `allow_headers`: `*`
 
-## 7. Do-not rules
+## 7. Read-first and docs-first guardrails
+
+- Read the relevant existing files before proposing code changes.
+- For release-readiness, architecture, workflow, or behavior questions, check existing documentation and repository evidence before editing code.
+- Do not modify app/ or frontend/ unless the task explicitly requires a small bug fix, security fix, or documented correction.
+- Prefer documentation or configuration corrections when the code is already correct.
+- Show proposed diffs before applying changes when practical.
+
+## 8. Do-not rules
 
 - Do not add authentication unless explicitly requested.
 - Do not add a database/persistence layer unless explicitly requested.
