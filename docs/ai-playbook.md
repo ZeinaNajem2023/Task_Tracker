@@ -6,7 +6,7 @@
 - When I want a focused first draft for a small, clearly defined coding task.
 - When I want a second set of eyes to review a plan, diff, test, or implementation.
 
-## When I do not reach for AI
+## When I do not reach for AI first
 
 - When I have not yet understood the requirement or decided what I actually want to build.
 - When the task involves sensitive information that should not be shared.
@@ -36,5 +36,5 @@
 - For a code review I reach for: **AI as a second reviewer, while I make the final decision**
 - For debugging I reach for: **AI after I collect the exact error, failing test, or unexpected behavior**
 - For infrastructure I reach for: **AI cautiously, with explicit constraints and review before applying changes**
-- I will never paste **passwords, API keys, secrets, or private credentials** into an AI tool.
+- I will never paste **passwords, API keys, secrets, credentials, or real personal/customer data** into an AI tool.
 - My one rule is: **I do not accept a change I cannot understand, review, and verify.**
