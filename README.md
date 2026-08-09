@@ -55,7 +55,7 @@ pip install -r requirements.txt
 
 Course standard command:
 
-uvicorn app.main:app --reload --port 8000
+`uvicorn app.main:app --reload --port 8000`
 
 API base URL after startup:
 
@@ -63,17 +63,21 @@ API base URL after startup:
 
 Quick check:
 
-curl http://127.0.0.1:8000/health
+`curl.exe http://127.0.0.1:8000/health`
 
 PowerShell alternative:
 
-Invoke-RestMethod http://127.0.0.1:8000/health
+`Invoke-RestMethod http://127.0.0.1:8000/health`
 
 ## 5. Run tests
 
-Course standard command:
+Locally verified command:
 
-pytest -v
+`python -m pytest -v`
+
+Verified local result:
+
+`20 passed in 0.73s`
 
 ## 6. Run with Docker
 
@@ -81,29 +85,30 @@ The repository includes a multi-stage Dockerfile using python:3.11-slim and a no
 
 Build image from repository root:
 
-docker build -t task-tracker:dev .
+`docker build -t task-tracker .`
 
 Run container:
 
-docker rm -f tt-dev 2>$null
-docker run -d --name tt-dev -p 8000:8000 task-tracker:dev
+`docker run --rm -d --name task-tracker-final -p 8000:8000 task-tracker`
 
 Verify health endpoint through host port mapping:
 
-curl http://127.0.0.1:8000/health
+`curl.exe -i http://127.0.0.1:8000/health`
 
 PowerShell alternative:
 
-Invoke-RestMethod http://127.0.0.1:8000/health
+`Invoke-RestMethod http://127.0.0.1:8000/health`
 
 Verify container runs as non-root user:
 
-docker exec tt-dev id -un
-docker exec tt-dev id -u
+`docker exec task-tracker-final id`
+`docker inspect --format '{{.Config.User}}' task-tracker-final`
 
-Stop and remove container:
+Verified result: container runs as non-root user `app`.
 
-docker rm -f tt-dev
+Stop container (it is automatically removed because `--rm` was used):
+
+`docker stop task-tracker-final`
 
 ## 7. CI workflow summary
 
@@ -116,7 +121,7 @@ Current CI job:
 - Uses Python 3.11
 - Installs dependencies from requirements.txt
 - Runs tests with:
-  - python -m pytest -v
+  - pytest -v
 
 ## 8. Project structure
 
@@ -161,7 +166,7 @@ Current limitations:
 - No database integration.
 - No deployment or production hardening documented.
 - CORS is configured for local development origins only.
-- Frontend and backend are separate local components; frontend serving approach is [VERIFY].
+- Frontend and backend are separate local components.
 
 ## 10. Technical notes / decisions
 
@@ -169,4 +174,15 @@ Current technical note:
 
 - [CLAUDE.md](CLAUDE.md)
 
-[VERIFY] If you prefer a dedicated decisions path (for example docs/decisions.md), add it and update this section to point there.
+## Final Project
+
+- Branch: `final-project`
+- Local API run command: `uvicorn app.main:app --reload --port 8000`
+- `/health` verified with HTTP 200
+- Kanban frontend loaded and New Task/Edit flows were manually exercised
+- Local tests: `python -m pytest -v` -> `20 passed in 0.73s`
+- CI: GitHub Actions passed on `final-project`; workflow test command is `pytest -v`
+- Docker: build/run/health checks passed and container verified as non-root user `app`
+- Release evidence: `docs/release-evidence.md`
+- Final AI review: `docs/final-ai-review.md`
+- Personal AI playbook: `docs/ai-playbook.md`
