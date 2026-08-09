@@ -77,7 +77,7 @@ Locally verified command:
 
 Verified local result:
 
-`20 passed in 0.73s`
+`20 passed`
 
 ## 6. Run with Docker
 
@@ -180,7 +180,7 @@ Current technical note:
 - Local API run command: `uvicorn app.main:app --reload --port 8000`
 - `/health` verified with HTTP 200
 - Kanban frontend loaded and New Task/Edit flows were manually exercised
-- Local tests: `python -m pytest -v` -> `20 passed in 0.73s`
+- Local tests: `python -m pytest -v` -> `20 passed`
 - CI: GitHub Actions passed on `final-project`; workflow test command is `pytest -v`
 - Docker: build/run/health checks passed and container verified as non-root user `app`
 - Release evidence: `docs/release-evidence.md`

@@ -9,7 +9,7 @@
 - The Kanban board loaded successfully.
 - I manually exercised the New Task create flow and the Edit flow successfully.
 - Test command: python -m pytest -v
-- Test result: 20 passed in 0.73s
+- Test result: 20 passed
 
 ## CI evidence
 
@@ -36,5 +36,5 @@
 | Claim checked                                   | Evidence used                                                                                                                                                    | Result                                  | Change made, if any                                                                                  |
 | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | README local API command and `/health` behavior | Ran `uvicorn app.main:app --reload --port 8000`; GET `/health` returned HTTP 200                                                                                 | Verified after documentation correction | Corrected the escaped local run command and documented the verified health behavior                  |
-| README local test command and result            | Ran `python -m pytest -v`; result was `20 passed in 0.73s`                                                                                                       | Verified                                | Documented the locally verified test command/result; CI remains separately documented as `pytest -v` |
+| README local test command and result            | Ran `python -m pytest -v`; result was `20 passed`                                                                                                                | Verified                                | Documented the locally verified test command/result; CI remains separately documented as `pytest -v` |
 | README Docker build/run/health/non-root claims  | `docker build` succeeded; container ran successfully; `/health` returned HTTP 200; `docker exec ... id` returned `uid=100(app)` and Docker config user was `app` | Verified                                | Updated README Docker commands to the exact workflow that was successfully tested                    |
