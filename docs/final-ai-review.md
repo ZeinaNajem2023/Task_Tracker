@@ -28,7 +28,7 @@ Reviewing .github/workflows/ci.yml.
 
 ## Manual security check
 
-I manually reviewed tracked files for .env files and searched the repository for terms including API key, secret, password, token, and credential. The only tracked environment file was .env.example, which contains only PORT=8000 and APP_ENV=development. The keyword matches were configuration names or documentation references rather than real credentials. I found no real secrets, tokens, passwords, or customer/personal data in the checked repository content.
+I manually reviewed tracked files for `.env` files and searched the repository for terms including API key, secret, password, token, and credential. The only tracked environment file was `.env.example`, which contains only `PORT=8000` and `APP_ENV=development`. The local `.env` file in this workspace contains the same placeholder values and is ignored by Git. The keyword matches I found were configuration names or documentation references rather than real credentials. I found no real secrets, tokens, passwords, or customer/personal data in the checked repository content.
 
 ## One AI output I rejected or corrected
 

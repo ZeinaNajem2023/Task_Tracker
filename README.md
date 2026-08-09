@@ -176,13 +176,59 @@ Current technical note:
 
 ## Final Project
 
-- Branch: `final-project`
-- Local API run command: `uvicorn app.main:app --reload --port 8000`
-- `/health` verified with HTTP 200
-- Kanban frontend loaded and New Task/Edit flows were manually exercised
-- Local tests: `python -m pytest -v` -> `20 passed`
-- CI: GitHub Actions passed on `final-project`; workflow test command is `pytest -v`
-- Docker: build/run/health checks passed and container verified as non-root user `app`
-- Release evidence: `docs/release-evidence.md`
-- Final AI review: `docs/final-ai-review.md`
-- Personal AI playbook: `docs/ai-playbook.md`
+Branch reviewed: `final-project`
+
+### What this submission demonstrates
+
+- Existing Task Tracker app still runs inside the intended course scope.
+- CI runs the pytest suite on push and pull_request.
+- Docker image builds and runs with `/health` returning HTTP 200.
+- AI review, security, and ownership evidence is documented in `docs/`.
+
+### How to run locally
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Health check used during verification:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+```
+
+### How to run tests
+
+```powershell
+python -m pytest -v
+```
+
+Verified local result: `20 passed`
+
+### How to run with Docker
+
+```powershell
+docker build -t task-tracker .
+docker run --rm -d --name task-tracker-final -p 8000:8000 task-tracker
+curl.exe -i http://127.0.0.1:8000/health
+docker inspect --format '{{.Config.User}}' task-tracker-final
+docker stop task-tracker-final
+```
+
+### Evidence files
+
+- docs/release-evidence.md
+- docs/final-ai-review.md
+- docs/ai-playbook.md
+
+### AI assistance summary
+
+AI helped draft or review: CI, Docker, docs, and release/security review notes.
+
+I verified the work by: running pytest, checking `/health` locally and in Docker, loading the frontend board, opening the create/edit UI, reviewing the workflow file, and checking tracked files for secret exposure.
+
+One AI suggestion I rejected or corrected: an earlier AI-generated repo summary claimed due-date and search features that do not exist in this repository, so I corrected the docs to match the actual codebase.

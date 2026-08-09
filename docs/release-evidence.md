@@ -3,38 +3,39 @@
 ## Baseline
 
 - Branch: final-project
-- Date: 2026-08-08
+- Date: 2026-08-09
 - Local app run command: `uvicorn app.main:app --reload --port 8000`
-- GET /health returned HTTP 200 OK.
-- The Kanban board loaded successfully.
-- I manually exercised the New Task create flow and the Edit flow successfully.
-- Test command: python -m pytest -v
+- /health command: `Invoke-RestMethod http://127.0.0.1:8000/health | ConvertTo-Json -Compress`
+- /health result: `{"status":"ok","timestamp":"2026-08-09T11:09:59.273443+00:00"}`
+- Frontend check: opened `frontend/index.html` while the backend was running; the Kanban board rendered, the New Task modal opened, and the Edit Task modal opened for a seeded task.
+- Test command: `python -m pytest -v`
 - Test result: 20 passed
 
 ## CI evidence
 
 - Workflow file: [.github/workflows/ci.yml](.github/workflows/ci.yml)
-- CI test command: pytest -v
+- Latest run link/note: CI run #24 completed successfully on `final-project`: https://github.com/ZeinaNajem2023/Task_Tracker/actions/runs/31309896192
+- CI test command: `python -m pytest -v`
 - continue-on-error: Not present
 - `|| true`: Not present
 - `--exit-zero`: Not present
 - Pytest skipped: Not present
 - Vague Python version: Not present (pinned to 3.11)
 - Missing dependency installation: Not present (installs from requirements.txt)
-- Latest run link/note: GitHub Actions workflow ran successfully on the final-project branch (CI #18, commit 2c76332).
 
 ## Docker evidence
 
-- Docker build check: Passed. `docker build -t task-tracker .` completed successfully and created `task-tracker:latest`.
-- Docker run check: Passed. `docker run --rm -d --name task-tracker-final -p 8000:8000 task-tracker` started the container successfully.
-- Docker /health check: Passed. `curl.exe -i http://127.0.0.1:8000/health` returned `HTTP/1.1 200 OK` with a JSON status of `"ok"`.
-- Non-root check: Passed. `docker exec task-tracker-final id` returned `uid=100(app) gid=101(app) groups=101(app)`, and `docker inspect --format '{{.Config.User}}' task-tracker-final` returned `app`.
-- No-baked-secrets check: Passed. A runtime filesystem check with `find /app -maxdepth 2 -type f -print` showed only application files and `requirements.txt` under `/app`, with no `.env` file present. The repository's `.dockerignore` also excludes `.env` and `.env.*`.
+- Build command: `docker build -t task-tracker-final-check .`
+- Run command: `docker run --rm -d --name task-tracker-final-check -p 8001:8000 task-tracker-final-check`
+- /health check: `curl.exe -i http://127.0.0.1:8001/health` returned `HTTP/1.1 200 OK` and `{"status":"ok",...}`.
+- Non-root check: `docker exec task-tracker-final-check sh -lc "id"` returned `uid=100(app) gid=101(app) groups=101(app)`, and `docker inspect --format '{{.Config.User}}' task-tracker-final-check` returned `app`.
+- No-baked-secrets check: `docker exec task-tracker-final-check sh -lc "find /app -maxdepth 2 -type f | sort"` listed only the application Python files plus `requirements.txt`; no `.env` file was present. `.dockerignore` excludes `.env` and `.env.*`.
 
 ## Documentation claim-vs-reality log
 
-| Claim checked                                   | Evidence used                                                                                                                                                    | Result                                  | Change made, if any                                                                                  |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| README local API command and `/health` behavior | Ran `uvicorn app.main:app --reload --port 8000`; GET `/health` returned HTTP 200                                                                                 | Verified after documentation correction | Corrected the escaped local run command and documented the verified health behavior                  |
-| README local test command and result            | Ran `python -m pytest -v`; result was `20 passed`                                                                                                                | Verified                                | Documented the locally verified test command/result; CI remains separately documented as `pytest -v` |
-| README Docker build/run/health/non-root claims  | `docker build` succeeded; container ran successfully; `/health` returned HTTP 200; `docker exec ... id` returned `uid=100(app)` and Docker config user was `app` | Verified                                | Updated README Docker commands to the exact workflow that was successfully tested                    |
+| Claim checked                                   | Evidence used                                                                                                                                                                                                              | Result   | Change made, if any                                                          |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| README local API command and `/health` behavior | Ran `uvicorn app.main:app --reload --port 8000`; then ran `Invoke-RestMethod http://127.0.0.1:8000/health` and confirmed the expected JSON payload.                                                                        | Verified | Kept the documented command and added the exact verification command/result. |
+| README local test command and result            | Ran `python -m pytest -v`; result was `20 passed`.                                                                                                                                                                         | Verified | Kept the command and recorded the verified result.                           |
+| README Docker build/run/health/non-root claims  | Ran `docker build -t task-tracker-final-check .`; `docker run --rm -d --name task-tracker-final-check -p 8001:8000 ...`; `curl.exe -i http://127.0.0.1:8001/health`; and `docker inspect --format '{{.Config.User}}' ...`. | Verified | Updated the README Docker section to match the validated workflow.           |
+| README frontend baseline claim                  | Opened `frontend/index.html`; observed the board render, New Task modal, and Edit Task modal for a seeded task.                                                                                                            | Verified | Clarified the Final Project summary so it reflects the checked UI behavior.  |
